@@ -3,13 +3,18 @@ import matplotlib.pyplot as plt
 from scipy.integrate import solve_ivp
 
 # Parameters of simulator
-maxFreq = 10.0 # frequency of stepper motor are changed linearly from 0 to maxFreq, 1/s
-time = 10.0     # seconds
-# Mechanical parameters
+maxFreq = 200.0 # frequency of stepper motor are changed linearly from 0 to maxFreq, 1/s
+time = 20.0     # seconds
+numPoints = 200000
+
+# Mechanical parameters of stepper motor
 N = 200         # number of phases of stepper motor
 J = 570E-07     # Inertia moment, kg*m^2
-K = 31.0E-02/2.8    # Ratio of maximum torque to maximum phase current
-PhiTol = 0.09*np.pi/180.0
+K = 31.0E-02*9.8/2.8    # Ratio of maximum torque to maximum phase current N*m/A
+PhiTol = 0.09*np.pi/180.0 # tolerqnce, radian
+DT = 0.09       # Detent torque, N*m
+FT = 0.02       # Friction torque, N*m
+
 # Electrical parameters
 Iref = 2.8      # Phase current, A
 Vpow = 24.0     # Power voltage of phases of stepper motor
@@ -26,31 +31,39 @@ def Iref2(t):
     timeQuant = int(t * freq) % 4
     return Iref if timeQuant > 0 and timeQuant < 3 else -Iref
 
-def PowTorque(phi, I1, I2):
+def GetVpow(t, iref, I):
+    if iref > 0.0:
+        if I < iref:
+            return Vpow
+        elif I - iref > 0.1:
+            return -Vpow
+        else:
+            return I*R
+    else:
+        if I > iref:
+            return -Vpow
+        elif iref - I > 0.1:
+            return Vpow
+        else:
+            return I*R
+
+def dIdt(t, iref, I):
+    return (GetVpow(t, iref, I) - I*R)/L
+
+def ElectricTorque(phi, I1, I2):
     return K*(I1*np.sin(N*phi) - I2*np.cos(N*phi))
 
-def dI1dt(t, I1):
-    iref = Iref1(t)
-    if abs(I1 - iref) < 0.1:
-        return 0.0
-    else:
-        return (Vpow*np.sign(iref) - I1*R)/L
+def DetentTorque(phi):
+    return DT*np.sin(N*phi*4.0)
 
-def dI2dt(t, I2):
-    iref = Iref2(t)
-    if abs(I2 - iref) < 0.1:
-        return 0.0
-    else:
-        return (Vpow*np.sign(iref) - I2*R)/L
+def SumTorque(phi, omega, I1, I2):
+    powerTorque = ElectricTorque(phi, I1, I2) - DetentTorque(phi)
+    friqTorque = FT
+    if friqTorque > abs(powerTorque):
+        friqTorque = abs(powerTorque)
+    return powerTorque - friqTorque*np.sign(omega)
 
-maxFrictionTorque = abs(PowTorque(PhiTol, Iref, 0.0))
-
-def AllTorque(phi, omega, I1, I2):
-    friqTorque = maxFrictionTorque*abs(omega)*0.1
-    if friqTorque > maxFrictionTorque:
-        friqTorque = maxFrictionTorque
-    return PowTorque(phi, I1, I2) - friqTorque*np.sign(omega)
-
+prevPercentage = 0;
 """
 y has format:
 [phi(t), omega(t), I1(t), I2(t)],
@@ -61,13 +74,16 @@ where:
  3. I2(t) - current of second phase
 """
 def MovementEquation(t, y):
-    print("t={0} phi={1} I1={2} I2={3}".format(t, y[0], y[2], y[3]))
-    #return [y[1], AllTorque(y[0], y[1], y[2], y[3])/J, dI1dt(t, y[2]), dI2dt(t, y[3])]
-    return [y[1], AllTorque(y[0], y[1], Iref1(t), Iref2(t))/J, 0.0, 0.0]
+    global prevPercentage
+    percentage = int(t/time*100.0)
+    if percentage > prevPercentage:
+        prevPercentage = percentage
+        print("{0}%".format(percentage))
+    return [y[1], SumTorque(y[0], y[1], y[2], y[3])/J, dIdt(t, Iref1(t), y[2]), dIdt(t, Iref2(t), y[3])]
 
 y0 = [0.0, 0.0, 0.0, 0.0]
 sol = solve_ivp(MovementEquation, [0.0, time], y0, vectorized = True, dense_output = True)
-t = np.linspace(0, time, 1000)
+t = np.linspace(0, time, numPoints)
 z = sol.sol(t)
 plt.plot(t, z[0])
 plt.xlabel("time")
