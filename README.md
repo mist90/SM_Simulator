@@ -20,9 +20,6 @@ $$\ I_{2}$$ - current of second phase of stepper motor, A
 python3 SM_simulator.py
  - Parameters are inside SM_simulator.py file
  
- - StepMotor.asc - electromechanical LTSpice model of stepper motor. Example of using here:
- https://github.com/mist90/electrotherm
-1. Clone that repository
-2. Copy StepMotor.asc and StepMotor.asy files there
-3. Open MotorControlStepping.asc
-4. Run
+ - LTSpice/StepMotor.asc - electromechanical LTSpice model of stepper motor. Example of using in MotorControlStepping.asc:
+1. Open MotorControlStepping.asc
+2. Run
