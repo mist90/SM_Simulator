@@ -22,7 +22,7 @@ python3 SM_simulator.py
  
  - StepMotor.asc - electromechanical LTSpice model of stepper motor. Example of using here:
  https://github.com/mist90/electrotherm
- Clone this repository
- Copy StepMotor.asc and StepMotor.asy files there
- Open MotorControlStepping.asc
- Run
+1. Clone that repository
+2. Copy StepMotor.asc and StepMotor.asy files there
+3. Open MotorControlStepping.asc
+4. Run
