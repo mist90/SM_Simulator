@@ -10,7 +10,6 @@ class StepperMotorSimulator:
         self.N = params["N"]         # number of phases of stepper motor
         self.J = params["J"]         # Inertia moment, kg*m^2
         self.K = params["K"]         # Ratio of maximum torque to maximum phase current N*m/A
-        self.PhiTol = params["PhiTol"] # tolerqnce, radian
         self.DT = params["DT"]       # Detent torque, N*m
         self.FT = params["FT"]       # Friction torque, N*m
         
