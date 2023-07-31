@@ -34,17 +34,19 @@ class StepperMotorSimulator:
         self.K = params["K"]         # Ratio of maximum torque to maximum phase current N*m/A
         self.DT = params["DT"]       # Detent torque, N*m
         self.FT = params["FT"]       # Friction torque, N*m
+        self.startOmega = params["startOmega"]
         
         # Electrical parameters
         self.Vpow = params["Vpow"]   # Power voltage of phases of stepper motor
         self.L = params["L"]         # Phase inductance, Hn
         self.R = params["R"]         # Phase resistance, Ohm
+        self.Fmax = params["DT"]/params["K"]*params["L"]
     
-    def GetVpow(self, t, iref, I):
+    def GetVpow(self, iref, I):
         if iref > 0.0:
             if I < iref:
                 return self.Vpow
-            elif I - iref > 0.1:
+            elif I - iref > 0.01:
                 return -self.Vpow
             else:
                 return I*self.R
@@ -56,14 +58,17 @@ class StepperMotorSimulator:
             else:
                 return I*self.R
     
-    def dIdt(self, t, iref, I):
-        return (self.GetVpow(t, iref, I) - I*self.R)/self.L
+    def GetInducedVoltage(self, phi, omega):
+        return self.N*self.Fmax*omega*np.cos(self.N*phi)
+    
+    def dIdt(self, phi, omega, iref, I):
+        return (self.GetVpow(iref, I) - self.GetInducedVoltage(phi, omega) - I*self.R)/self.L
     
     def ElectricTorque(self, phi, I1, I2):
-        return self.K*(I1*np.sin(self.N*phi) - I2*np.cos(self.N*phi))
+        return self.K*(I1*np.sin(self.N/4.0*phi) - I2*np.cos(self.N/4.0*phi))
     
     def DetentTorque(self, phi):
-        return self.DT*np.sin(self.N*phi*4.0)
+        return self.DT*np.sin(self.N*phi)
     
     def SumTorque(self, phi, omega, I1, I2):
         powerTorque = self.ElectricTorque(phi, I1, I2) - self.DetentTorque(phi)
@@ -86,10 +91,10 @@ class StepperMotorSimulator:
         if percentage > self.prevPercentage:
             self.prevPercentage = percentage
             print("{0}%".format(percentage))
-        return [y[1], self.SumTorque(y[0], y[1], y[2], y[3])/self.J, self.dIdt(t, self.driver.I1(t), y[2]), self.dIdt(t, self.driver.I2(t), y[3])]
+        return [y[1], self.SumTorque(y[0], y[1], y[2], y[3])/self.J, self.dIdt(y[0], y[1], self.driver.I1(t), y[2]), self.dIdt(y[0], y[1], self.driver.I2(t), y[3])]
     
     def run(self):
-        y0 = [0.0, 0.0, 0.0, 0.0]
+        y0 = [0.0, self.startOmega, 0.0, 0.0]
         self.sol = solve_ivp(self.MovementEquation, [0.0, self.StopTime], y0, vectorized = True, dense_output = True)
     
     def getPhi(self, t):

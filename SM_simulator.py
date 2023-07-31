@@ -25,8 +25,9 @@ import matplotlib.pyplot as plt
 import SM_model
 
 # Parameters of simulator
-maxFreq = 200.0 # frequency of stepper motor are changed linearly from 0 to maxFreq, 1/s
-time = 20.0     # seconds
+startFreq = 4.0 # frequency of stepper motor are changed linearly from startFreq to stopFreq, 1/s
+stopFreq = 20.0 # frequency of stepper motor are changed linearly from startFreq to stopFreq, 1/s
+time = 5.0     # seconds
 numPoints = 200000
 Iref = 2.8      # Phase current, A
 
@@ -35,24 +36,45 @@ params["StopTime"] = time
 # Mechanical parameters of stepper motor
 params["N"] = 200         # number of phases of stepper motor
 params["J"] = 570E-07     # Inertia moment, kg*m^2
-params["K"] = 31.0E-02*9.8/2.8    # Ratio of maximum torque to maximum phase current N*m/A
-params["DT"] = 0.09       # Detent torque, N*m
-params["FT"] = 0.04       # Friction torque, N*m
+params["K"] = 21.0E-02*9.8/2.8    # Ratio of maximum torque to maximum phase current N*m/A
+params["FT"] = 0.1       # Friction torque, N*m
+params["startOmega"] = 2.0*np.pi*startFreq/params["N"]
 
 # Electrical parameters
 params["Iref"] = 2.8      # Phase current, A
 params["Vpow"] = 24.0     # Power voltage of phases of stepper motor
-params["L"] = 6.8E-03     # Phase inductance, Hn
-params["R"] = 1.5         # Phase resistance, Ohm
+params["L"] = 4.6E-03     # Phase inductance, Hn
+params["R"] = 1.2         # Phase resistance, Ohm
+
+# Calculation of DT parameter
+k = params["K"]/params["L"]   # T = K*I = k*F = k*L*I
+Vmax = 62.6               # Max voltage of induced field, V
+fmax = 905.44             # Frequency of induced field at Vmax, Hz
+Fmax = Vmax/(2.0*np.pi*fmax) # Maximum magnetic flow of stepper motor magnetics, Wb
+params["DT"] = k*Fmax     # Detent torque, N*m
 
 
-driver = SM_model.FullStepDriver(1.0, maxFreq, time, Iref)
-#driver = SM_model.MicroStepDriver(1.0, maxFreq, time, Iref)
+driver = SM_model.FullStepDriver(startFreq, stopFreq, time, Iref)
+#driver = SM_model.MicroStepDriver(startFreq, stopFreq, time, Iref)
 sm = SM_model.StepperMotorSimulator(params, driver)
 sm.run()
 t = np.linspace(0, time, numPoints)
-plt.plot(t, sm.getPhi(t))
+
+# Plot results
+fig, axs = plt.subplots(4, 1, sharex=True)
+# Remove vertical space between axes
+fig.subplots_adjust(hspace=0)
+
+# Plot each graph
+axs[0].plot(t, sm.getPhi(t))
+axs[0].set_ylabel("phi, rad")
+axs[1].plot(t, sm.getOmega(t))
+axs[1].set_ylabel("w, rad/s")
+axs[2].plot(t, sm.getI1(t))
+axs[2].set_ylabel("I1, A")
+axs[3].plot(t, sm.getI2(t))
+axs[3].set_ylabel("I2, A")
+
 plt.xlabel("time")
-plt.legend(["phi"], shadow = True)
 plt.title("Stepper motor movement simulation")
 plt.show()
