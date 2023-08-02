@@ -37,7 +37,7 @@ params["StopTime"] = time
 params["N"] = 200         # number of phases of stepper motor
 params["J"] = 570E-07     # Inertia moment, kg*m^2
 params["K"] = 21.0E-02*9.8/2.8    # Ratio of maximum torque to maximum phase current N*m/A
-params["FT"] = 0.1       # Friction torque, N*m
+params["FT"] = 0.022      # Friction torque, N*m
 params["startOmega"] = 2.0*np.pi*startFreq/params["N"]
 
 # Electrical parameters

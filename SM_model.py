@@ -73,8 +73,8 @@ class StepperMotorSimulator:
     def SumTorque(self, phi, omega, I1, I2):
         powerTorque = self.ElectricTorque(phi, I1, I2) - self.DetentTorque(phi)
         friqTorque = self.FT
-        if friqTorque > abs(powerTorque):
-            friqTorque = abs(powerTorque)
+        if abs(omega) < 0.001:
+            friqTorque = friqTorque*abs(omega)/0.001
         return powerTorque - friqTorque*np.sign(omega)
     
     """
