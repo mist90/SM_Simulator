@@ -25,9 +25,9 @@ import matplotlib.pyplot as plt
 import SM_model
 
 # Parameters of simulator
-startFreq = 4.0 # frequency of stepper motor are changed linearly from startFreq to stopFreq, 1/s
-stopFreq = 20.0 # frequency of stepper motor are changed linearly from startFreq to stopFreq, 1/s
-time = 5.0     # seconds
+startFreq = 12.0 # frequency of stepper motor are changed linearly from startFreq to stopFreq, 1/s
+stopFreq = 13.0 # frequency of stepper motor are changed linearly from startFreq to stopFreq, 1/s
+time = 1.0     # seconds
 numPoints = 200000
 Iref = 2.8      # Phase current, A
 
@@ -37,8 +37,10 @@ params["StopTime"] = time
 params["N"] = 200         # number of phases of stepper motor
 params["J"] = 570E-07     # Inertia moment, kg*m^2
 params["K"] = 21.0E-02*9.8/2.8    # Ratio of maximum torque to maximum phase current N*m/A
-params["FT"] = 0.022      # Friction torque, N*m
-params["startOmega"] = 2.0*np.pi*startFreq/params["N"]
+params["FTc"] = 0.022      # Coulomb Friction torque, N*m
+params["FTbrk"] = 0.036    # Breakaway Friction torque, N*m
+params["brkOmega"] = 3.14
+params["startOmega"] = 0.0#2.0*np.pi*startFreq/params["N"]
 
 # Electrical parameters
 params["Iref"] = 2.8      # Phase current, A

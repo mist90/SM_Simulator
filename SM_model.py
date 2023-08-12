@@ -23,17 +23,38 @@
 import numpy as np
 from scipy.integrate import solve_ivp
 
+class Switcher:
+    def __init__(self, PWMfreq, Vpow):
+        self.PWMfreq = PWMfreq
+        self.Vpow = Vpow
+        self.lastDownQuant = 0
+        self.downMode = False
+    
+    def GetVoltage(self, t, iref, I):
+        if abs(I) > abs(iref):
+            if not self.downMode:
+                self.downMode = True
+                self.lastTimeDown = int(t*self.PWMfreq)
+        else:
+            numCurQuant = int(t*self.PWMfreq)
+            if numCurQuant > self.lastDownQuant:
+                self.downMode = False
+        return self.Vpow if not self.downMode else 0.0
+
 class StepperMotorSimulator:
     def __init__(self, params, driver):
         self.prevPercentage = 0
         self.driver = driver
         self.StopTime  =params["StopTime"]
+        self.PWMfreq = 30000.0
         # Mechanical parameters of stepper motor
         self.N = params["N"]         # number of phases of stepper motor
         self.J = params["J"]         # Inertia moment, kg*m^2
         self.K = params["K"]         # Ratio of maximum torque to maximum phase current N*m/A
         self.DT = params["DT"]       # Detent torque, N*m
-        self.FT = params["FT"]       # Friction torque, N*m
+        self.FTc = params["FTc"]     # Coulomb Friction torque, N*m
+        self.FTbrk = params["FTbrk"] # Breakaway Friction torque, N*m
+        self.brkOmega = params["brkOmega"] # Breakaway angular velocity, 1/s
         self.startOmega = params["startOmega"]
         
         # Electrical parameters
@@ -41,28 +62,18 @@ class StepperMotorSimulator:
         self.L = params["L"]         # Phase inductance, Hn
         self.R = params["R"]         # Phase resistance, Ohm
         self.Fmax = params["DT"]/params["K"]*params["L"]
+        
+        self.sw1 = Switcher(self.PWMfreq, self.Vpow)
+        self.sw2 = Switcher(self.PWMfreq, self.Vpow)
     
-    def GetVpow(self, iref, I):
-        if iref > 0.0:
-            if I < iref:
-                return self.Vpow
-            elif I - iref > 0.01:
-                return -self.Vpow
-            else:
-                return I*self.R
-        else:
-            if I > iref:
-                return -self.Vpow
-            elif iref - I > 0.01:
-                return self.Vpow
-            else:
-                return I*self.R
+    def GetVpow(self, t, iref, I, switcher):
+        return switcher.GetVoltage(t, iref, I)*np.sign(iref)
     
     def GetInducedVoltage(self, phi, omega):
-        return self.N*self.Fmax*omega*np.cos(self.N*phi)
+        return 0.0#self.N*self.Fmax*omega*np.cos(self.N*phi)
     
-    def dIdt(self, phi, omega, iref, I):
-        return (self.GetVpow(iref, I) - self.GetInducedVoltage(phi, omega) - I*self.R)/self.L
+    def dIdt(self, t, phi, omega, iref, I, switcher):
+        return (self.GetVpow(t, iref, I, switcher) + self.GetInducedVoltage(phi, omega) - I*self.R)/self.L
     
     def ElectricTorque(self, phi, I1, I2):
         return self.K*(I1*np.sin(self.N/4.0*phi) - I2*np.cos(self.N/4.0*phi))
@@ -70,12 +81,13 @@ class StepperMotorSimulator:
     def DetentTorque(self, phi):
         return self.DT*np.sin(self.N*phi)
     
+    def FrictionTorque(self, omega):
+        wst = self.brkOmega*np.sqrt(2.0)
+        wcoul = self.brkOmega/10.0
+        return np.sqrt(2.0*np.e)*(self.FTbrk - self.FTc)*np.exp(-(omega/wst)**2)*omega/wst + self.FTc*np.tanh(omega/wcoul)
+    
     def SumTorque(self, phi, omega, I1, I2):
-        powerTorque = self.ElectricTorque(phi, I1, I2) - self.DetentTorque(phi)
-        friqTorque = self.FT
-        if abs(omega) < 0.001:
-            friqTorque = friqTorque*abs(omega)/0.001
-        return powerTorque - friqTorque*np.sign(omega)
+        return self.ElectricTorque(phi, I1, I2) - self.DetentTorque(phi) - self.FrictionTorque(omega)
     
     """
     y has format:
@@ -91,11 +103,11 @@ class StepperMotorSimulator:
         if percentage > self.prevPercentage:
             self.prevPercentage = percentage
             print("{0}%".format(percentage))
-        return [y[1], self.SumTorque(y[0], y[1], y[2], y[3])/self.J, self.dIdt(y[0], y[1], self.driver.I1(t), y[2]), self.dIdt(y[0], y[1], self.driver.I2(t), y[3])]
+        return [y[1], self.SumTorque(y[0], y[1], y[2], y[3])/self.J, self.dIdt(t, y[0], y[1], self.driver.I1(t), y[2], self.sw1), self.dIdt(t, y[0], y[1], self.driver.I2(t), y[3], self.sw2)]
     
     def run(self):
         y0 = [0.0, self.startOmega, 0.0, 0.0]
-        self.sol = solve_ivp(self.MovementEquation, [0.0, self.StopTime], y0, vectorized = True, dense_output = True)
+        self.sol = solve_ivp(self.MovementEquation, [0.0, self.StopTime], y0, vectorized = True, dense_output = True, max_step = 0.25/self.PWMfreq)
     
     def getPhi(self, t):
         return self.sol.sol(t)[0]
