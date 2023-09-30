@@ -25,9 +25,9 @@ import matplotlib.pyplot as plt
 import SM_model
 
 # Parameters of simulator
-startFreq = 12.0 # frequency of stepper motor are changed linearly from startFreq to stopFreq, 1/s
-stopFreq = 13.0 # frequency of stepper motor are changed linearly from startFreq to stopFreq, 1/s
-time = 1.0     # seconds
+startFreq = 25.0 # frequency of stepper motor are changed linearly from startFreq to stopFreq, 1/s
+stopFreq = 25.1 # frequency of stepper motor are changed linearly from startFreq to stopFreq, 1/s
+time = 0.32     # seconds
 numPoints = 200000
 Iref = 2.8      # Phase current, A
 

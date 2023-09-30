@@ -70,7 +70,7 @@ class StepperMotorSimulator:
         return switcher.GetVoltage(t, iref, I)*np.sign(iref)
     
     def GetInducedVoltage(self, phi, omega):
-        return 0.0#self.N*self.Fmax*omega*np.cos(self.N*phi)
+        return self.N*self.Fmax*omega*np.cos(self.N*phi)
     
     def dIdt(self, t, phi, omega, iref, I, switcher):
         return (self.GetVpow(t, iref, I, switcher) + self.GetInducedVoltage(phi, omega) - I*self.R)/self.L
