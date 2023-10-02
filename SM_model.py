@@ -69,11 +69,17 @@ class StepperMotorSimulator:
     def GetVpow(self, t, iref, I, switcher):
         return switcher.GetVoltage(t, iref, I)*np.sign(iref)
     
-    def GetInducedVoltage(self, phi, omega):
+    def GetInducedVoltage1(self, phi, omega):
         return self.N*self.Fmax*omega*np.cos(self.N*phi)
     
-    def dIdt(self, t, phi, omega, iref, I, switcher):
-        return (self.GetVpow(t, iref, I, switcher) + self.GetInducedVoltage(phi, omega) - I*self.R)/self.L
+    def GetInducedVoltage2(self, phi, omega):
+        return self.N*self.Fmax*omega*np.sin(self.N*phi)
+    
+    def dIdt1(self, t, phi, omega, I):
+        return (self.GetVpow(t, self.driver.I1(t), I, self.sw1) + self.GetInducedVoltage1(phi, omega) - I*self.R)/self.L
+    
+    def dIdt2(self, t, phi, omega, I):
+        return (self.GetVpow(t, self.driver.I2(t), I, self.sw2) + self.GetInducedVoltage2(phi, omega) - I*self.R)/self.L
     
     def ElectricTorque(self, phi, I1, I2):
         return self.K*(I1*np.sin(self.N/4.0*phi) - I2*np.cos(self.N/4.0*phi))
@@ -103,7 +109,7 @@ class StepperMotorSimulator:
         if percentage > self.prevPercentage:
             self.prevPercentage = percentage
             print("{0}%".format(percentage))
-        return [y[1], self.SumTorque(y[0], y[1], y[2], y[3])/self.J, self.dIdt(t, y[0], y[1], self.driver.I1(t), y[2], self.sw1), self.dIdt(t, y[0], y[1], self.driver.I2(t), y[3], self.sw2)]
+        return [y[1], self.SumTorque(y[0], y[1], y[2], y[3])/self.J, self.dIdt1(t, y[0], y[1], y[2]), self.dIdt2(t, y[0], y[1], y[3])]
     
     def run(self):
         y0 = [0.0, self.startOmega, 0.0, 0.0]
