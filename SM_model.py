@@ -55,6 +55,7 @@ class StepperMotorSimulator:
         self.FTc = params["FTc"]     # Coulomb Friction torque, N*m
         self.FTbrk = params["FTbrk"] # Breakaway Friction torque, N*m
         self.brkOmega = params["brkOmega"] # Breakaway angular velocity, 1/s
+        self.B = params["B"]         # Viscous damping friction torque constant, N*m*s
         self.startOmega = params["startOmega"]
         
         # Electrical parameters
@@ -90,7 +91,7 @@ class StepperMotorSimulator:
     def FrictionTorque(self, omega):
         wst = self.brkOmega*np.sqrt(2.0)
         wcoul = self.brkOmega/10.0
-        return np.sqrt(2.0*np.e)*(self.FTbrk - self.FTc)*np.exp(-(omega/wst)**2)*omega/wst + self.FTc*np.tanh(omega/wcoul)
+        return np.sqrt(2.0*np.e)*(self.FTbrk - self.FTc)*np.exp(-(omega/wst)**2)*omega/wst + self.FTc*np.tanh(omega/wcoul) + self.B*omega
     
     def SumTorque(self, phi, omega, I1, I2):
         return self.ElectricTorque(phi, I1, I2) - self.DetentTorque(phi) - self.FrictionTorque(omega)
