@@ -37,9 +37,9 @@ params["StopTime"] = time
 params["N"] = 200         # number of phases of stepper motor
 params["J"] = 570E-07     # Inertia moment, kg*m^2
 params["K"] = 21.0E-02*9.8/2.8    # Ratio of maximum torque to maximum phase current N*m/A
-params["FTc"] = 0.022      # Coulomb Friction torque, N*m
-params["FTbrk"] = 0.036    # Breakaway Friction torque, N*m
-params["brkOmega"] = 3.14  # Breakaway angular velocity, 1/s
+params["FTc"] = 0.051      # Coulomb Friction torque, N*m
+params["FTbrk"] = 0.051    # Breakaway Friction torque, N*m
+params["brkOmega"] = 0.1   # Breakaway angular velocity, 1/s
 params["B"] = 0.0          # Viscous damping friction torque constant, N*m*s
 params["startOmega"] = 0.0 # 2.0*np.pi*startFreq/params["N"]
 
