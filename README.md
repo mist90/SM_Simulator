@@ -21,6 +21,10 @@ $$\ \omega(t)$$ - angular velocity of rotor, rad/sec
 $$\ I_{1}$$ - current of first phase of stepper motor, A
 $$\ I_{2}$$ - current of second phase of stepper motor, A
 
+ - Scheme of directions of vectors:
+![scheme](https://github.com/mist90/SM_Simulator/assets/99616450/a466799b-4758-48aa-b135-c77267a4cb84)
+
+
  - Requires: python3, numpy, scipy
  - Run:
 python3 SM_simulator.py
