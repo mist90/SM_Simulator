@@ -50,11 +50,8 @@ params["L"] = 4.6E-03     # Phase inductance, Hn
 params["R"] = 1.2         # Phase resistance, Ohm
 
 # Calculation of DT parameter
-k = params["K"]/params["L"]   # T = K*I = k*F = k*L*I
-Vmax = 62.6               # Max voltage of induced field, V
-fmax = 905.44             # Frequency of induced field at Vmax, Hz
-Fmax = Vmax/(2.0*np.pi*fmax) # Maximum magnetic flow of stepper motor magnetics, Wb
-params["DT"] = k*Fmax     # Detent torque, N*m
+params["Flowmax"] = 0.011 # Maximum magnetic flow of stepper motor magnetics, Wb
+params["DT"] = 0.034      # Detent torque, N*m
 
 
 driver = SM_model.FullStepDriver(startFreq, stopFreq, time, Iref)

@@ -62,7 +62,7 @@ class StepperMotorSimulator:
         self.Vpow = params["Vpow"]   # Power voltage of phases of stepper motor
         self.L = params["L"]         # Phase inductance, Hn
         self.R = params["R"]         # Phase resistance, Ohm
-        self.Fmax = params["DT"]/params["K"]*params["L"]
+        self.Flowmax = params["Flowmax"]   # Max magnetic Flow
         
         self.sw1 = Switcher(self.PWMfreq, self.Vpow)
         self.sw2 = Switcher(self.PWMfreq, self.Vpow)
@@ -71,10 +71,10 @@ class StepperMotorSimulator:
         return switcher.GetVoltage(t, iref, I)*np.sign(iref)
     
     def GetInducedVoltage1(self, phi, omega):
-        return self.N/2.0*self.Fmax*omega*np.cos(self.N/2.0*phi)
+        return -self.N/2.0*self.Flowmax*omega*np.sin(self.N/2.0*phi)
     
     def GetInducedVoltage2(self, phi, omega):
-        return self.N/2.0*self.Fmax*omega*np.sin(self.N/2.0*phi)
+        return self.N/2.0*self.Flowmax*omega*np.cos(self.N/2.0*phi)
     
     def dIdt1(self, t, phi, omega, I):
         return (self.GetVpow(t, self.driver.I1(t), I, self.sw1) - self.GetInducedVoltage1(phi, omega) - I*self.R)/self.L
@@ -83,10 +83,10 @@ class StepperMotorSimulator:
         return (self.GetVpow(t, self.driver.I2(t), I, self.sw2) - self.GetInducedVoltage2(phi, omega) - I*self.R)/self.L
     
     def ElectricTorque(self, phi, I1, I2):
-        return self.K*(I1*np.sin(self.N/2.0*phi) - I2*np.cos(self.N/2.0*phi))
+        return -self.K*(I1*np.sin(self.N/2.0*phi) - I2*np.cos(self.N/2.0*phi))
     
     def DetentTorque(self, phi):
-        return self.DT*np.sin(4.0*self.N/2.0*phi)
+        return -self.DT/10.0*np.sin(4.0*self.N/2.0*phi)
     
     def FrictionTorque(self, omega):
         wst = self.brkOmega*np.sqrt(2.0)
@@ -94,7 +94,7 @@ class StepperMotorSimulator:
         return np.sqrt(2.0*np.e)*(self.FTbrk - self.FTc)*np.exp(-(omega/wst)**2)*omega/wst + self.FTc*np.tanh(omega/wcoul) + self.B*omega
     
     def SumTorque(self, phi, omega, I1, I2):
-        return self.ElectricTorque(phi, I1, I2) - self.DetentTorque(phi) - self.FrictionTorque(omega)
+        return self.ElectricTorque(phi, I1, I2) + self.DetentTorque(phi) - self.FrictionTorque(omega)
     
     """
     y has format:
