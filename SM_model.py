@@ -31,15 +31,26 @@ class Switcher:
         self.downMode = False
     
     def GetVoltage(self, t, iref, I):
-        if abs(I) > abs(iref):
-            if not self.downMode:
-                self.downMode = True
-                self.lastTimeDown = int(t*self.PWMfreq)
+        if iref >= 0.0:
+            if I > iref:
+                if not self.downMode:
+                    self.downMode = True
+                    self.lastTimeDown = int(t*self.PWMfreq)
+            else:
+                numCurQuant = int(t*self.PWMfreq)
+                if numCurQuant > self.lastDownQuant:
+                    self.downMode = False
+            return self.Vpow if not self.downMode else 0.0
         else:
-            numCurQuant = int(t*self.PWMfreq)
-            if numCurQuant > self.lastDownQuant:
-                self.downMode = False
-        return self.Vpow if not self.downMode else 0.0
+            if I < iref:
+                if not self.downMode:
+                    self.downMode = True
+                    self.lastTimeDown = int(t*self.PWMfreq)
+            else:
+                numCurQuant = int(t*self.PWMfreq)
+                if numCurQuant > self.lastDownQuant:
+                    self.downMode = False
+            return -self.Vpow if not self.downMode else 0.0
 
 class StepperMotorSimulator:
     def __init__(self, params, driver):
@@ -68,7 +79,7 @@ class StepperMotorSimulator:
         self.sw2 = Switcher(self.PWMfreq, self.Vpow)
     
     def GetVpow(self, t, iref, I, switcher):
-        return switcher.GetVoltage(t, iref, I)*np.sign(iref)
+        return switcher.GetVoltage(t, iref, I)
     
     def GetInducedVoltage1(self, phi, omega):
         return -self.N/2.0*self.Flowmax*omega*np.sin(self.N/2.0*phi)
