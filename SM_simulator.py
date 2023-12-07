@@ -46,6 +46,7 @@ params["startOmega"] = 0.0 # 2.0*np.pi*startFreq/params["N"]
 # Electrical parameters
 params["Iref"] = 2.8      # Phase current, A
 params["Vpow"] = 24.0     # Power voltage of phases of stepper motor
+params["breakByVoltage"] = False  # True - set voltage reverse polarity for decreasing current in motor phase, False - set 0 V for decreasing current in motor phase
 params["L"] = 4.6E-03     # Phase inductance, Hn
 params["R"] = 1.2         # Phase resistance, Ohm
 
@@ -53,9 +54,10 @@ params["R"] = 1.2         # Phase resistance, Ohm
 params["Flowmax"] = 0.011 # Maximum magnetic flow of stepper motor magnetics, Wb
 params["DT"] = 0.034      # Detent torque, N*m
 
-
+# Select driver
 driver = SM_model.FullStepDriver(startFreq, stopFreq, time, Iref)
 #driver = SM_model.MicroStepDriver(startFreq, stopFreq, time, Iref)
+
 sm = SM_model.StepperMotorSimulator(params, driver)
 sm.run()
 t = np.linspace(0, time, numPoints)

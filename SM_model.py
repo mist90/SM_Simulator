@@ -24,33 +24,29 @@ import numpy as np
 from scipy.integrate import solve_ivp
 
 class Switcher:
-    def __init__(self, PWMfreq, Vpow):
+    def __init__(self, PWMfreq, Vpow, breakByVoltage):
         self.PWMfreq = PWMfreq
         self.Vpow = Vpow
         self.lastDownQuant = 0
         self.downMode = False
+        self.breakByVoltage = breakByVoltage
     
     def GetVoltage(self, t, iref, I):
-        if iref >= 0.0:
-            if I > iref:
-                if not self.downMode:
-                    self.downMode = True
-                    self.lastTimeDown = int(t*self.PWMfreq)
-            else:
-                numCurQuant = int(t*self.PWMfreq)
-                if numCurQuant > self.lastDownQuant:
-                    self.downMode = False
-            return self.Vpow if not self.downMode else 0.0
+        if (iref >= 0.0 and I > iref) or (iref < 0.0 and I < iref):
+            if not self.downMode:
+                self.downMode = True
+                self.lastTimeDown = int(t*self.PWMfreq)
         else:
-            if I < iref:
-                if not self.downMode:
-                    self.downMode = True
-                    self.lastTimeDown = int(t*self.PWMfreq)
+            numCurQuant = int(t*self.PWMfreq)
+            if numCurQuant > self.lastDownQuant:
+                self.downMode = False
+        if not self.downMode:
+            return self.Vpow*np.sign(iref)
+        else:
+            if not self.breakByVoltage:
+                return 0.0
             else:
-                numCurQuant = int(t*self.PWMfreq)
-                if numCurQuant > self.lastDownQuant:
-                    self.downMode = False
-            return -self.Vpow if not self.downMode else 0.0
+                return -self.Vpow*np.sign(iref)
 
 class StepperMotorSimulator:
     def __init__(self, params, driver):
@@ -75,8 +71,8 @@ class StepperMotorSimulator:
         self.R = params["R"]         # Phase resistance, Ohm
         self.Flowmax = params["Flowmax"]   # Max magnetic Flow
         
-        self.sw1 = Switcher(self.PWMfreq, self.Vpow)
-        self.sw2 = Switcher(self.PWMfreq, self.Vpow)
+        self.sw1 = Switcher(self.PWMfreq, self.Vpow, params["breakByVoltage"])
+        self.sw2 = Switcher(self.PWMfreq, self.Vpow, params["breakByVoltage"])
     
     def GetVpow(self, t, iref, I, switcher):
         return switcher.GetVoltage(t, iref, I)
