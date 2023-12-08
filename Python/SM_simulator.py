@@ -63,7 +63,7 @@ sm.run()
 t = np.linspace(0, time, numPoints)
 
 # Plot results
-fig, axs = plt.subplots(4, 1, sharex=True)
+fig, axs = plt.subplots(3, 1, sharex=True)
 # Remove vertical space between axes
 fig.subplots_adjust(hspace=0)
 
@@ -73,10 +73,9 @@ axs[0].set_ylabel("phi, rad")
 axs[1].plot(t, sm.getOmega(t))
 axs[1].set_ylabel("w, rad/s")
 axs[2].plot(t, sm.getI1(t))
-axs[2].set_ylabel("I1, A")
-axs[3].plot(t, sm.getI2(t))
-axs[3].set_ylabel("I2, A")
+axs[2].plot(t, sm.getI2(t))
+axs[2].set_ylabel("I1,I2, A")
 
 plt.xlabel("time")
-plt.title("Stepper motor movement simulation")
+fig.suptitle("Stepper motor movement simulation")
 plt.show()

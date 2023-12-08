@@ -25,8 +25,9 @@ $$\ I_{2}$$ - current of second phase of stepper motor, A
 ![scheme](https://github.com/mist90/SM_Simulator/assets/99616450/a466799b-4758-48aa-b135-c77267a4cb84)
 
 
- - Requires: python3, numpy, scipy
+ - Requires: python3, numpy, scipy, matplotlib
  - Run:
+cd ./Pyhton
 python3 SM_simulator.py
  - Parameters are inside SM_simulator.py file
  
