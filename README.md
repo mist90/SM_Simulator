@@ -24,13 +24,40 @@ $$\ I_{2}$$ - current of second phase of stepper motor, A
  - Scheme of directions of vectors:
 ![scheme](https://github.com/mist90/SM_Simulator/assets/99616450/a466799b-4758-48aa-b135-c77267a4cb84)
 
-
+1. Python model
  - Requires: python3, numpy, scipy, matplotlib
- - Run:
+ - Run Python model:
 cd ./Pyhton
 python3 SM_simulator.py
  - Parameters are inside SM_simulator.py file
- 
- - LTSpice/StepMotor.asc - electromechanical LTSpice model of stepper motor. Example of using in MotorControlStepping.asc:
-1. Open MotorControlStepping.asc
-2. Run
+
+2. LTSpice model
+Schemes:
+* MotorControlStepping.asc - movement simulation of stepper motor with electro-thermal scheme of stepper motor driver
+* MotorControlSteppingSimplfied.asc - simplified scheme of movement simulation of stepper motor without electro-thermal scheme of stepper motor driver
+* MotorControlFreeRotation.asc - free rotation simulation of stepper motor until stopping by friction force
+
+Subcircuits:
+* StepMotor.asc - electro-mechanical scheme of stepper motor.
+* HalfBridge.asc - scheme of half bridge for current stabilization and control in step motor.
+	Dependent of subcircuit: IRFB4615PBF_therm.asc, feedback.asc
+* Radiator.asc - thermal scheme of heat sink Wakefield OMNI-UNI-30-50-D
+* IRFB4615PBF_therm.asc - electro-thermal model of transistor IRFB4615PBF
+	Dependent of subcircuit: irfb4615pbf.asy
+* feedback.asc - logical block of current stabilization
+* irfb4615pbf.asy - symbol for spice model irfb4615pbf.spi
+
+Quick start:
+cd ./LTSpice
+ - Download Infineon spice-model file of transistor irfb4615pbf.spi.
+ Link: https://www.infineon.com/dgdl/irfb4615pbf.spi?fileId=5546d462533600a4015357128143396c
+ - Change next parameters for .MODEL MM:
+.MODEL MM NMOS LEVEL=3 IS=1e-32
++VTO=Vth NFS=1.988288E+12 KP=74.89621574661534 THETA=0.31480607500134106 KAPPA=42.67943561393658 VMAX = 4E+3
++NSUB=1E+15 PHI=0.576 GAMMA=0.5276 TOX=1E-07 XJ = 0 DELTA=0
+ - Change RS:
+RS 8 3 0.0001
+ - Change RD:
+RD 9 1 {Rds_val}
+ - Open asc-file in LTSpice and press Run button
+ - Run
