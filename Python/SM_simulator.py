@@ -23,40 +23,51 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import SM_model
-
-# Parameters of simulator
-startFreq = 50.0 # frequency of stepper motor are changed linearly from startFreq to stopFreq, 1/s
-stopFreq = 50.1 # frequency of stepper motor are changed linearly from startFreq to stopFreq, 1/s
-time = 0.12     # seconds
-numPoints = 200000
-Iref = 2.8      # Phase current, A
+import sys
+import configparser
 
 params = dict()
-params["StopTime"] = time
-# Mechanical parameters of stepper motor
-params["N"] = 200         # number of phases of stepper motor
-params["J"] = 570E-07     # Inertia moment, kg*m^2
-params["K"] = 21.0E-02*9.8/2.8    # Ratio of maximum torque to maximum phase current N*m/A
-params["FTc"] = 0.051      # Coulomb Friction torque, N*m
-params["FTbrk"] = 0.051    # Breakaway Friction torque, N*m
-params["brkOmega"] = 0.1   # Breakaway angular velocity, 1/s
-params["B"] = 0.0          # Viscous damping friction torque constant, N*m*s
-params["startOmega"] = 0.0 # 2.0*np.pi*startFreq/params["N"]
 
-# Electrical parameters
-params["Iref"] = 2.8      # Phase current, A
-params["Vpow"] = 24.0     # Power voltage of phases of stepper motor
-params["breakByVoltage"] = False  # True - set voltage reverse polarity for decreasing current in motor phase, False - set 0 V for decreasing current in motor phase
-params["L"] = 4.6E-03     # Phase inductance, Hn
-params["R"] = 1.2         # Phase resistance, Ohm
+for i in range(1, len(sys.argv)):
+    cfg = configparser.ConfigParser()
+    cfg.read(sys.argv[i])
+    for sectionName in cfg:
+        section = dict(cfg[sectionName])
+        if sectionName == "Mechanical":
+            params["N"] = int(section["n"])           # number of phases of stepper motor
+            params["J"] = float(section["j"])         # Inertia moment, kg*m^2
+            params["K"] = float(section["k"])         # Ratio of maximum torque to maximum phase current N*m/A
+            params["FTc"] = float(section["ftc"])     # Coulomb Friction torque, N*m
+            params["FTbrk"] = float(section["ftbrk"]) # Breakaway Friction torque, N*m
+            params["brkOmega"] = float(section["brkomega"])   # Breakaway angular velocity, 1/s
+            params["B"] = float(section["b"])         # Viscous damping friction torque constant, N*m*s
+        elif sectionName == "Electrical":
+            params["L"] = float(section["l"])         # Phase inductance, Hn
+            params["R"] = float(section["r"])         # Phase resistance, Ohm
+            params["Flowmax"] = float(section["flowmax"]) # Maximum magnetic flow of stepper motor magnetics, Wb
+            params["DT"] = float(section["dt"])       # Detent torque, N*m
+        elif sectionName == "Time":
+            params["StopTime"] = float(section["stoptime"])
+            numPoints = int(section["numpoints"])
+        elif sectionName == "Frequency":
+            startFreq = float(section["startfreq"])
+            stopFreq = float(section["stopfreq"])
+            params["startOmega"] = float(section["startomega"]) # 2.0*np.pi*startFreq/params["N"]
+        elif sectionName == "Output":
+            Iref = float(section["iref"])      # Phase current, A
+            params["Vpow"] = float(section["vpow"])     # Power voltage of phases of stepper motor
+            microstep = True if section["microstep"] == "true" else False
+            """True - set voltage reverse polarity for decreasing current in motor phase,
+               False - set 0 V for decreasing current in motor phase"""
+            params["breakByVoltage"] = True if section["breakbyvoltage"] == "true" else False
 
-# Calculation of DT parameter
-params["Flowmax"] = 0.011 # Maximum magnetic flow of stepper motor magnetics, Wb
-params["DT"] = 0.034      # Detent torque, N*m
+time = params["StopTime"]
 
 # Select driver
-driver = SM_model.FullStepDriver(startFreq, stopFreq, time, Iref)
-#driver = SM_model.MicroStepDriver(startFreq, stopFreq, time, Iref)
+if microstep:
+    driver = SM_model.MicroStepDriver(startFreq, stopFreq, time, Iref)
+else:
+    driver = SM_model.FullStepDriver(startFreq, stopFreq, time, Iref)
 
 sm = SM_model.StepperMotorSimulator(params, driver)
 sm.run()
